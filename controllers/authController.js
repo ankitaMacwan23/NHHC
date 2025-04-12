@@ -1,12 +1,66 @@
 const Caregivers = require('../models/careGiver');
 const User = require('../models/user');
+const AdminUser = require('../models/adminUser');
 
+//--------------------------for admin site functions----------------------------------
+
+exports.getAdminLogin = async (req, res) => {
+    const { username, password } = req.body;
+    const user = await AdminUser.findOne({ username });
+  
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+  
+    req.session.isAdmin = true;
+    req.session.user = { username: user.username }; // optional
+    return res.json({ message: "Authorized" });
+};
+
+exports.getAdminLogout = async (req, res) => {
+  req.session.destroy(err => {
+    if (err) return res.status(500).json({ message: "Logout failed" });
+    res.clearCookie('connect.sid'); // name of your session cookie
+    res.status(200).json({ message: "Logged out successfully" });
+  });
+};
+
+exports.getCheckAdminSession = (req, res) => {
+  console.log("Session check called", req.session);
+  if (req.session.isAdmin) {
+    return res.json({ isAdmin: true });
+  } else {
+    return res.json({ isAdmin: false });
+  }
+};
+
+//--------------------------for frontend(App) Functions------------------------------
+
+exports.postLogin = async (req, res) => {
+  const { mobile, role } = req.body;
+
+  try {
+    const caregiver = await Caregivers.findOne({
+      contact: mobile,
+      role: role,
+      status: "Approved",
+    });
+
+    if (!caregiver) {
+      return res.status(401).json({
+        message: "Invalid credentials or account not approved by admin.",
+      });
+    }
+    return res.json({ success: true, caregiver });
+
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Server error during login." });
+  }
+};
 
 //mobile no saved after first time user install app
 exports.postSaveMobile = async (req, res) => {
   try {
     const { mobile } = req.body;
-    console.log(mobile);
 
     if (!mobile) {
       return res.status(400).json({ message: 'Mobile number is required' });
@@ -26,43 +80,18 @@ exports.postSaveMobile = async (req, res) => {
   }
 };
 
-exports.getLogin = (req,res,next) => {
-    res.render('auth/login',{ pageTitle: 'Patient Added'});
-}
+
+
+
+
+
+
 
 // authController.js
 // const fast2sms = require('fast-two-sms'); // Commented out for now
 const OTPStore = {}; // Save OTPs temporarily
 
-exports.postLogin = async (req, res) => {
-  const { mobile, role } = req.body;
 
-  try {
-    const caregiver = await Caregivers.findOne({
-      contact: mobile,
-      role: role,
-      status: "Approved",
-    });
-
-    if (!caregiver) {
-      return res.status(401).json({
-        message: "Invalid credentials or account not approved by admin.",
-      });
-    }
-    //const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    //OTPStore[mobile] = otp;
-
-    //console.log(`OTP for ${mobile} is ${otp}`); // For now
-
-    //return res.json({ success: true, message: "OTP sent successfully (check console)" });
-    return res.json({ success: true, caregiver });
-
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ message: "Server error during login." });
-  }
-};
 
 exports.postVerifyOtp = async (req, res) => {
   const { mobile, otp, role } = req.body;
