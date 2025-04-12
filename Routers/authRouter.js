@@ -8,15 +8,27 @@ const authController = require('./../controllers/authController');
 
 const authRouter = express.Router();
 
-authRouter.get("/login",authController.getLogin);
+// for admin site API's
+authRouter.post("/admin/login",authController.getAdminLogin);
+authRouter.get("/admin/logout",authController.getAdminLogout);
+authRouter.get("/admin/check-session", authController.getCheckAdminSession);
 
+// for frontend(App) site API's
 authRouter.post("/login/caregiver", authController.postLogin);
+authRouter.post('/user/save-mobile', authController.postSaveMobile);
+
+
+
+
+
 
 authRouter.post("/login/verify-otp", authController.postVerifyOtp);
-
 authRouter.post("/logout",authController.postLogout);
 
-authRouter.post('/user/save-mobile', authController.postSaveMobile);
+
+
+
+
 
 
 
